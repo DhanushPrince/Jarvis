@@ -1,0 +1,22 @@
+stt:
+  engine: whisper
+  whisper_model: mlx-community/whisper-base-mlx
+  parakeet_model: sonic-speech/parakeet-tdt-0.6b-v3-int8
+llm:
+  model: mlx-community/Qwen3-0.6B-4bit
+  base_url: http://127.0.0.1:1234/v1
+  api_key: dummyKey
+  max_tokens: 4096
+  system_prompt: You are Jarvis, a friendly, helpful voice assistant. Start the conversation
+    by saying, "Hello, I'm Jarvis!" Then stop and wait for the user.
+tts:
+  model: mlx-community/Kokoro-82M-bf16
+  voice: af_heart
+  sample_rate: 24000
+vad:
+  confidence: 0.5
+  start_secs: 0.2
+  stop_secs: 0.2
+  min_volume: 0.3
+turn:
+  smart_turn: true
