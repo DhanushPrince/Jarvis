@@ -28,6 +28,15 @@ macos-local-voice-agents/
 ├── assets/                       # Static assets used by docs
 │   └── debug-console-screenshot.png
 │
+├── scripts/                      # One-command helper scripts (portable, repo-relative)
+│   ├── setup_server.sh           # Create the Python 3.12 venv and install server deps
+│   ├── start_llm.sh              # Start the local OpenAI-compatible LLM server (:1234)
+│   ├── run_agent.sh              # Start just the Pipecat agent server (bot.py, :7860)
+│   ├── start.sh                  # Bring up the FULL stack: LLM + agent + client
+│   ├── stop.sh                   # Kill all Jarvis processes (:1234 / :7860 / :3000)
+│   ├── test_components.sh        # Launch the STT/LLM/TTS component test UI (:8080)
+│   └── smoke_test.sh             # Headless STT/LLM/TTS inference tests + timings
+│
 ├── server/                       # Python voice-agent backend (Pipecat + MLX)
 │   ├── bot.py                    # Main entry point — builds & runs the WebRTC voice pipeline
 │   ├── bot.py.orig               # Original/reference version of bot.py
@@ -63,6 +72,65 @@ macos-local-voice-agents/
     ├── .gitignore
     └── .next/                    # Next.js build output (generated, not committed)
 ```
+
+## Quick start (scripts)
+
+The [`scripts/`](scripts/) folder has portable helper scripts (they resolve paths relative to the repo, so they work from any clone). Run them from the repo root. **Requirements: Apple Silicon (arm64), `python3.12`, and `ffmpeg` (`brew install python@3.12 ffmpeg`).**
+
+First-time setup, then run everything:
+
+```shell
+./scripts/setup_server.sh    # create server/.venv and install deps (one-time)
+./scripts/start.sh           # start LLM (:1234) + agent (:7860) + client (:3000)
+# open http://localhost:3000, allow mic, and say "Hello" to Jarvis
+./scripts/stop.sh            # stop everything when done
+```
+
+Or run each piece in its own terminal:
+
+```shell
+# Terminal A — local LLM server (keep open; first boot downloads weights)
+./scripts/start_llm.sh
+
+# Terminal B — the Pipecat voice agent
+./scripts/run_agent.sh
+
+# Terminal C — the web client
+cd client && npm i && npm run dev
+```
+
+Script reference:
+
+| Script | What it does | Port(s) |
+| --- | --- | --- |
+| `scripts/setup_server.sh` | Create `server/.venv` (Python 3.12) and install all deps. `WITH_PARAKEET=1` also installs Parakeet STT. | — |
+| `scripts/start_llm.sh` | Start the local OpenAI-compatible LLM server (`mlx_lm.server`, Qwen3-0.6B-4bit). Runs in the foreground. | 1234 |
+| `scripts/run_agent.sh` | Start just the agent (`bot.py`). Requires the LLM server running. Honors `STT_ENGINE`, `LLM_MODEL`, etc. | 7860 |
+| `scripts/start.sh` | Bring up the full stack (LLM + agent + client) in the background, with health checks. Logs to `*.log` in the repo root. | 1234 / 7860 / 3000 |
+| `scripts/stop.sh` | Kill everything started by `start.sh`. | — |
+| `scripts/test_components.sh` | Launch the component test UI (see below). | 8080 |
+| `scripts/smoke_test.sh` | Headless STT/LLM/TTS inference test; writes `smoke_results.json` + `smoke_stt.txt`. Needs a clip at `audio_16k.wav` (or `audio.m4a`). | — |
+
+Common env overrides (accepted by the scripts): `STT_ENGINE=whisper|parakeet`, `WHISPER_MODEL`, `PARAKEET_MODEL`, `LLM_MODEL`, `LLM_BASE_URL`, `PORT` (LLM port), `HF_HUB_OFFLINE=1` (fully offline once models are cached).
+
+## Component Test UI
+
+To exercise **STT, LLM, and TTS independently** — using the same models/wrappers as the live bot but without the WebRTC/Pipecat pipeline — use the component test server ([`server/component_test_server.py`](server/component_test_server.py)):
+
+```shell
+./scripts/test_components.sh          # http://localhost:8080
+PORT=8090 ./scripts/test_components.sh # custom port
+```
+
+Then open **http://localhost:8080**. The page gives you three panels:
+
+- **STT** — upload/record audio and get the transcript (`POST /api/stt`).
+- **LLM** — type a prompt and get a reply (`POST /api/llm`). This panel needs the LLM server running (`./scripts/start_llm.sh` on :1234); STT and TTS work without it.
+- **TTS** — type text and hear/download synthesized speech (`POST /api/tts`).
+
+`GET /api/health` reports which components are reachable. It runs on its own port (default 8080) so it never interferes with the live voice agent on :7860.
+
+For a fully headless check (no browser), run `./scripts/smoke_test.sh` instead — it runs all three components once and writes timings and peak memory to `smoke_results.json`.
 
 ## Models and dependencies
 
@@ -111,12 +179,10 @@ Edit [`server/config.yaml`](server/config.yaml) to change models and pipeline be
 
 ### Testing components independently
 
-To exercise STT, LLM, and TTS separately (without WebRTC/Pipecat), run the component test server:
+To exercise STT, LLM, and TTS separately (without WebRTC/Pipecat), use the component test UI — see the [Component Test UI](#component-test-ui) section above:
 
 ```shell
-cd server/
-.venv/bin/python component_test_server.py --port 8080
-open http://localhost:8080
+./scripts/test_components.sh   # http://localhost:8080
 ```
 
 ## Start the web client
