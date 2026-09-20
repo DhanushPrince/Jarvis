@@ -20,3 +20,8 @@ vad:
   min_volume: 0.3
 turn:
   smart_turn: true
+
+audio:
+  # OSS mic noise suppression before VAD/STT. rnnoise | none
+  # Requires: pip install "pipecat-ai[rnnoise]" (pulls pyrnnoise + soxr)
+  noise_filter: rnnoise

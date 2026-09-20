@@ -4,7 +4,7 @@ uvicorn
 opencv-python
 mlx-lm
 mlx-audio
-pipecat-ai[openai,deepgram,rime,silero,mlx-whisper]>=0.0.80
+pipecat-ai[openai,deepgram,rime,silero,mlx-whisper,rnnoise]>=0.0.80
 aiortc
 nltk
 

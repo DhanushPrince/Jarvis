@@ -8,7 +8,8 @@ Env var names (all optional):
     LLM_MODEL, LLM_BASE_URL, LLM_API_KEY, LLM_MAX_TOKENS, SYSTEM_PROMPT,
     TTS_MODEL, TTS_VOICE, TTS_SAMPLE_RATE,
     VAD_CONFIDENCE, VAD_START_SECS, VAD_STOP_SECS, VAD_MIN_VOLUME,
-    SMART_TURN
+    SMART_TURN,
+    AUDIO_NOISE_FILTER
 
 Usage:
     from config import CONFIG
@@ -57,6 +58,9 @@ _DEFAULTS = {
     "turn": {
         "smart_turn": True,
     },
+    "audio": {
+        "noise_filter": "rnnoise",
+    },
 }
 
 
@@ -101,6 +105,7 @@ _ENV_MAP = [
     ("vad", "stop_secs", "VAD_STOP_SECS"),
     ("vad", "min_volume", "VAD_MIN_VOLUME"),
     ("turn", "smart_turn", "SMART_TURN"),
+    ("audio", "noise_filter", "AUDIO_NOISE_FILTER"),
 ]
 
 

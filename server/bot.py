@@ -28,6 +28,8 @@ from pipecat.services.openai.llm import OpenAILLMService
 
 from pipecat.services.whisper.stt import WhisperSTTServiceMLX, MLXModel
 from pipecat.transports.base_transport import TransportParams
+from pipecat.audio.filters.rnnoise_filter import RNNoiseFilter
+from rnnoise_compat import ensure_rnnoise_compat
 from pipecat.processors.frameworks.rtvi.observer import RTVIObserver
 from pipecat.processors.frameworks.rtvi.processor import RTVIProcessor
 from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
@@ -78,11 +80,21 @@ SYSTEM_INSTRUCTION = CONFIG["llm"]["system_prompt"]
 
 
 async def run_bot(webrtc_connection):
+    _noise = str(CONFIG.get("audio", {}).get("noise_filter", "none")).strip().lower()
+    _audio_in_filter = None
+    if _noise in ("rnnoise", "true", "1", "yes", "on"):
+        ensure_rnnoise_compat()
+        _audio_in_filter = RNNoiseFilter()
+        logger.info("audio_in_filter=RNNoiseFilter (OSS noise suppression)")
+    elif _noise not in ("", "none", "off", "false", "0"):
+        logger.warning(f"Unknown audio.noise_filter={_noise!r}; expected rnnoise|none")
+
     transport = SmallWebRTCTransport(
         webrtc_connection=webrtc_connection,
         params=TransportParams(
             audio_in_enabled=True,
             audio_out_enabled=True,
+            audio_in_filter=_audio_in_filter,
             # NOTE: In pipecat 1.0+ (this is 1.8.1) VAD and turn detection are NO
             # LONGER configured on TransportParams — those kwargs are silently
             # ignored here (TransportParams has no vad_analyzer/turn_analyzer
