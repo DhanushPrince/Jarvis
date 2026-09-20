@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "pipecat", "src"))
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks, FastAPI
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from loguru import logger
 
 from pipecat.audio.vad.silero import SileroVADAnalyzer
@@ -42,6 +42,7 @@ from pipecat.turns.user_start import (
 )
 
 from tts_mlx_isolated import TTSMLXIsolated
+from ptt import PTTGate, PTTState
 
 load_dotenv(override=True)
 
@@ -64,6 +65,7 @@ LLM_MODEL = CONFIG["llm"]["model"]
 LLM_BASE_URL = CONFIG["llm"]["base_url"]
 
 app = FastAPI()
+ptt_state = PTTState(enabled=bool(CONFIG["hotkey"]["enabled"]))
 
 pcs_map: Dict[str, SmallWebRTCConnection] = {}
 
@@ -163,6 +165,7 @@ async def run_bot(webrtc_connection):
     pipeline = Pipeline(
         [
             transport.input(),
+            PTTGate(ptt_state),
             stt,
             rtvi,
             context_aggregator.user(),
@@ -209,6 +212,22 @@ async def run_bot(webrtc_connection):
     runner = PipelineRunner(handle_sigint=False)
 
     await runner.run(task)
+
+
+@app.get("/api/ptt")
+async def get_ptt():
+    return {"enabled": ptt_state.enabled, "active": ptt_state.active}
+
+
+@app.post("/api/ptt")
+async def set_ptt(request: dict):
+    if not ptt_state.enabled:
+        raise HTTPException(status_code=409, detail="Push-to-talk is disabled in config.yaml")
+    active = request.get("active")
+    if not isinstance(active, bool):
+        raise HTTPException(status_code=422, detail="'active' must be a boolean")
+    ptt_state.set_active(active)
+    return {"enabled": True, "active": ptt_state.active}
 
 
 @app.post("/api/offer")

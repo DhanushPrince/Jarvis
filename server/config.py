@@ -8,7 +8,7 @@ Env var names (all optional):
     LLM_MODEL, LLM_BASE_URL, LLM_API_KEY, LLM_MAX_TOKENS, SYSTEM_PROMPT,
     TTS_MODEL, TTS_VOICE, TTS_SAMPLE_RATE,
     VAD_CONFIDENCE, VAD_START_SECS, VAD_STOP_SECS, VAD_MIN_VOLUME,
-    SMART_TURN
+    SMART_TURN, HOTKEY_ENABLED, HOTKEY_KEY, HOTKEY_SERVER_URL
 
 Usage:
     from config import CONFIG
@@ -57,6 +57,11 @@ _DEFAULTS = {
     "turn": {
         "smart_turn": True,
     },
+    "hotkey": {
+        "enabled": False,
+        "key": "right_command",
+        "server_url": "http://127.0.0.1:7860",
+    },
 }
 
 
@@ -101,6 +106,9 @@ _ENV_MAP = [
     ("vad", "stop_secs", "VAD_STOP_SECS"),
     ("vad", "min_volume", "VAD_MIN_VOLUME"),
     ("turn", "smart_turn", "SMART_TURN"),
+    ("hotkey", "enabled", "HOTKEY_ENABLED"),
+    ("hotkey", "key", "HOTKEY_KEY"),
+    ("hotkey", "server_url", "HOTKEY_SERVER_URL"),
 ]
 
 

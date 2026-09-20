@@ -18,6 +18,13 @@ Any of these can be swapped out or reconfigured. All models and settings are dri
 
 The bot and web client communicate over a low-latency, local, serverless WebRTC connection. See the Pipecat [SmallWebRTCTransport docs](https://docs.pipecat.ai/server/services/transport/small-webrtc) for details.
 
+## macOS push-to-talk
+
+An optional native Quartz helper provides a system-wide hold-to-talk key,
+defaulting to **Right Command (⌘)**. It gates audio before STT/VAD, so ambient
+noise cannot start a turn while released. See [HOTKEY.md](HOTKEY.md) for setup,
+macOS permissions, customization, and the Apple Silicon smoke-test checklist.
+
 ## Project structure
 
 ```
