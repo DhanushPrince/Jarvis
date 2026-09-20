@@ -32,10 +32,12 @@ limit as Jarvis. The default URL is local (`http://127.0.0.1:1234/v1`).
 
 ## Text mode vs audio mode
 
-Text mode intentionally omits STT, TTS, VAD, smart-turn, PTT, and RNNoise. It
-runs on Linux CPU CI and macOS without loading Jarvis's Apple MLX Whisper/Kokoro
-services. The existing `server/bot.py` remains the full macOS SmallWebRTC voice
-path and continues to use its VAD and turn settings.
+Text mode intentionally omits STT, TTS, VAD input, PTT, and RNNoise. It runs on
+Linux CPU CI and macOS without loading Jarvis's Apple MLX Whisper/Kokoro
+services. Pipecat's context aggregator initializes its small CPU turn model, but
+text input does not traverse the audio turn path. The existing `server/bot.py`
+remains the full macOS SmallWebRTC voice path and continues to use its configured
+VAD and turn settings.
 
 For audio evals, install `pipecat-ai[evals]` (already included above) and add a
 separate audio pipeline using Pipecat's CPU-friendly Moonshine STT and Kokoro
