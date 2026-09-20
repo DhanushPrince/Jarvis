@@ -7,5 +7,10 @@ mlx-audio
 pipecat-ai[openai,deepgram,rime,silero,mlx-whisper]>=0.0.80
 aiortc
 nltk
+sounddevice
+pyobjc-core
+pyobjc-framework-Quartz
+pyobjc-framework-Cocoa
+pyobjc-framework-ApplicationServices
 
 

@@ -20,4 +20,9 @@ dependencies = [
     "pyobjc-framework-Quartz",
     "pyobjc-framework-Cocoa",
     "pyobjc-framework-ApplicationServices",
+    "sounddevice",
 ]
+
+[project.optional-dependencies]
+dictation = ["parakeet-mlx"]
+dictation-cleanup = ["llama-cpp-python"]

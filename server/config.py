@@ -8,7 +8,7 @@ Env var names (all optional):
     LLM_MODEL, LLM_BASE_URL, LLM_API_KEY, LLM_MAX_TOKENS, SYSTEM_PROMPT,
     TTS_MODEL, TTS_VOICE, TTS_SAMPLE_RATE,
     VAD_CONFIDENCE, VAD_START_SECS, VAD_STOP_SECS, VAD_MIN_VOLUME,
-    SMART_TURN
+    SMART_TURN, and DICTATION_* names documented in DICTATION.md.
 
 Usage:
     from config import CONFIG
@@ -57,6 +57,18 @@ _DEFAULTS = {
     "turn": {
         "smart_turn": True,
     },
+    "dictation": {
+        "hotkey": "right_command",
+        "stt_backend": "parakeet",
+        "stt_model": "sonic-speech/parakeet-tdt-0.6b-v3-int8",
+        "language": "en",
+        "cleanup_enabled": False,
+        "cleanup_backend": "s1-mini",
+        "cleanup_model_path": "",
+        "sample_rate": 16000,
+        "fail_closed_seconds": 1.5,
+        "clipboard_restore_delay_ms": 150,
+    },
 }
 
 
@@ -101,6 +113,20 @@ _ENV_MAP = [
     ("vad", "stop_secs", "VAD_STOP_SECS"),
     ("vad", "min_volume", "VAD_MIN_VOLUME"),
     ("turn", "smart_turn", "SMART_TURN"),
+    ("dictation", "hotkey", "DICTATION_HOTKEY"),
+    ("dictation", "stt_backend", "DICTATION_STT_BACKEND"),
+    ("dictation", "stt_model", "DICTATION_STT_MODEL"),
+    ("dictation", "language", "DICTATION_LANGUAGE"),
+    ("dictation", "cleanup_enabled", "DICTATION_CLEANUP_ENABLED"),
+    ("dictation", "cleanup_backend", "DICTATION_CLEANUP_BACKEND"),
+    ("dictation", "cleanup_model_path", "DICTATION_CLEANUP_MODEL_PATH"),
+    ("dictation", "sample_rate", "DICTATION_SAMPLE_RATE"),
+    ("dictation", "fail_closed_seconds", "DICTATION_FAIL_CLOSED_SECONDS"),
+    (
+        "dictation",
+        "clipboard_restore_delay_ms",
+        "DICTATION_CLIPBOARD_RESTORE_DELAY_MS",
+    ),
 ]
 
 

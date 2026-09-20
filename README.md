@@ -18,6 +18,14 @@ Any of these can be swapped out or reconfigured. All models and settings are dri
 
 The bot and web client communicate over a low-latency, local, serverless WebRTC connection. See the Pipecat [SmallWebRTCTransport docs](https://docs.pipecat.ai/server/services/transport/small-webrtc) for details.
 
+## System-wide dictation (separate alpha)
+
+Jarvis also has a standalone, offline-first macOS dictation process: hold a
+global hotkey, speak, release, and insert local STT output into the focused app.
+It does **not** use Pipecat, the browser client, or SmallWebRTC. See
+[`DICTATION.md`](DICTATION.md) for setup, permissions, configuration, optional
+s1-mini cleanup, and the Mac test checklist.
+
 ## Project structure
 
 ```

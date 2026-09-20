@@ -20,3 +20,14 @@ vad:
   min_volume: 0.3
 turn:
   smart_turn: true
+dictation:
+  hotkey: right_command
+  stt_backend: parakeet
+  stt_model: sonic-speech/parakeet-tdt-0.6b-v3-int8
+  language: en
+  cleanup_enabled: false
+  cleanup_backend: s1-mini
+  cleanup_model_path: ""
+  sample_rate: 16000
+  fail_closed_seconds: 1.5
+  clipboard_restore_delay_ms: 150

@@ -69,6 +69,10 @@ if [[ "${WITH_PARAKEET:-0}" == "1" ]]; then
   echo "==> Installing parakeet-mlx (optional STT)"
   $PIP parakeet-mlx
 fi
+if [[ "${WITH_CLEANUP:-0}" == "1" ]]; then
+  echo "==> Installing llama-cpp-python (optional s1-mini cleanup)"
+  CMAKE_ARGS="-DGGML_METAL=on" $PIP llama-cpp-python
+fi
 
 # --- Verify imports ---------------------------------------------------------
 echo "==> Verifying imports"
