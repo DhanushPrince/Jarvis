@@ -154,7 +154,10 @@ class QuartzHotkeyListener:
             if self.tap and Quartz.CGEventTapIsEnabled(self.tap):
                 self.on_health()
             else:
+                self._pressed = False
                 self.on_cancel()
+                if self.tap:
+                    Quartz.CGEventTapEnable(self.tap, True)
 
     def close(self) -> None:
         self._stop.set()

@@ -1468,6 +1468,7 @@ dependencies = [
     { name = "pyobjc-framework-cocoa" },
     { name = "pyobjc-framework-quartz" },
     { name = "python-dotenv" },
+    { name = "sounddevice" },
     { name = "uvicorn" },
 ]
 
@@ -1487,6 +1488,7 @@ requires-dist = [
     { name = "pyobjc-framework-cocoa" },
     { name = "pyobjc-framework-quartz" },
     { name = "python-dotenv" },
+    { name = "sounddevice" },
     { name = "uvicorn" },
 ]
 

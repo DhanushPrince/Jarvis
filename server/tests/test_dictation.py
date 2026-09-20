@@ -26,6 +26,21 @@ class SessionTests(unittest.TestCase):
         session.hotkey_down(20)
         self.assertIs(session.cancel(), Action.CANCEL_CAPTURE)
 
+    def test_listener_health_refreshes_watchdog(self):
+        session = DictationSession(1.5)
+        session.hotkey_down(10)
+        session.listener_healthy(11)
+        self.assertIs(session.tick(12.49), Action.NONE)
+        self.assertIs(session.tick(12.5), Action.CANCEL_CAPTURE)
+
+    def test_processing_ignores_press_and_error_recovers_on_next_press(self):
+        session = DictationSession()
+        session.hotkey_down(1)
+        session.hotkey_up()
+        self.assertIs(session.hotkey_down(2), Action.NONE)
+        session.processing_finished(error=True)
+        self.assertIs(session.hotkey_down(3), Action.START_CAPTURE)
+
 
 class HotkeyTests(unittest.TestCase):
     def test_modifier_and_chord_parsing(self):

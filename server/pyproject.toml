@@ -22,7 +22,3 @@ dependencies = [
     "pyobjc-framework-ApplicationServices",
     "sounddevice",
 ]
-
-[project.optional-dependencies]
-dictation = ["parakeet-mlx"]
-dictation-cleanup = ["llama-cpp-python"]

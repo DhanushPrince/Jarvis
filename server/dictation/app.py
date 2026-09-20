@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import queue
 import signal
 import sys
 import threading
@@ -15,7 +16,7 @@ from .audio import MicrophoneRecorder
 from .hotkey import QuartzHotkeyListener, parse_hotkey
 from .insertion import MacTextInjector
 from .processing import make_cleanup, make_stt
-from .session import Action, DictationSession
+from .session import Action, DictationSession, State
 from .settings import load_settings
 
 
@@ -59,8 +60,11 @@ class DictationController:
         self.injector = MacTextInjector(settings.clipboard_restore_delay_ms)
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
+        self.actions: queue.Queue[str] = queue.Queue()
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="dictation")
+        self.action_worker = threading.Thread(target=self._run_actions, daemon=True)
         self.watchdog = threading.Thread(target=self._watchdog, daemon=True)
+        self.action_worker.start()
         self.watchdog.start()
 
     def health(self) -> None:
@@ -68,31 +72,84 @@ class DictationController:
             self.session.listener_healthy(time.monotonic())
 
     def down(self) -> None:
-        with self.lock:
-            action = self.session.hotkey_down(time.monotonic())
-            if action is Action.START_CAPTURE:
-                try:
-                    self.recorder.start()
-                    self.status.set("recording")
-                except Exception as exc:
-                    self.session.cancel()
-                    self.status.set("error")
-                    print(f"Could not start microphone: {exc}", file=sys.stderr)
+        self.actions.put("down")
 
     def up(self) -> None:
-        with self.lock:
-            action = self.session.hotkey_up()
-            if action is not Action.PROCESS_CAPTURE:
-                return
-            samples = self.recorder.stop()
-            self.status.set("processing")
-        self.executor.submit(self._process, samples)
+        self.actions.put("up")
 
     def cancel(self) -> None:
+        self.actions.put("cancel")
+
+    def _run_actions(self) -> None:
+        while True:
+            action = self.actions.get()
+            if action == "close":
+                return
+            if action == "down":
+                self._start_capture()
+            elif action == "up":
+                self._stop_capture()
+            else:
+                self._cancel_capture(force=action == "force_cancel")
+
+    def _start_capture(self) -> None:
         with self.lock:
-            if self.session.cancel() is Action.CANCEL_CAPTURE:
+            action = self.session.hotkey_down(time.monotonic())
+        if action is not Action.START_CAPTURE:
+            return
+        try:
+            self.recorder.start()
+            with self.lock:
+                still_recording = self.session.state is State.RECORDING
+                self.session.listener_healthy(time.monotonic())
+            if still_recording:
+                self.status.set("recording")
+            else:
                 self.recorder.cancel()
-                self.status.set("idle")
+        except Exception as exc:
+            with self.lock:
+                if self.session.state is State.RECORDING:
+                    self.session.cancel()
+            self.status.set("error")
+            print(f"Could not start microphone: {exc}", file=sys.stderr)
+
+    def _stop_capture(self) -> None:
+        with self.lock:
+            action = self.session.hotkey_up()
+        if action is not Action.PROCESS_CAPTURE:
+            return
+        samples = self.recorder.stop()
+        self.status.set("processing")
+        self.executor.submit(self._process, samples)
+
+    def _cancel_capture(self, force: bool = False) -> None:
+        with self.lock:
+            action = self.session.cancel()
+        if force or action is Action.CANCEL_CAPTURE:
+            self.recorder.cancel()
+            self.status.set("error" if force else "idle")
+
+    @staticmethod
+    def _on_main_thread(callback):
+        from PyObjCTools import AppHelper
+
+        done = threading.Event()
+        result = []
+
+        def run():
+            try:
+                result.append((True, callback()))
+            except Exception as exc:
+                result.append((False, exc))
+            finally:
+                done.set()
+
+        AppHelper.callAfter(run)
+        if not done.wait(3):
+            raise TimeoutError("main thread did not complete text insertion")
+        if not result[0][0]:
+            raise result[0][1]
+        return result[0][1]
 
     def _process(self, samples) -> None:
         error = False
@@ -106,7 +163,7 @@ class DictationController:
                 text = self.cleanup.clean(text)
             except Exception as exc:
                 print(f"Cleanup failed; inserting raw transcript: {exc}", file=sys.stderr)
-            if not self.injector.insert(text):
+            if not self._on_main_thread(lambda: self.injector.insert(text)):
                 error = True
                 print(
                     "Could not paste automatically. Transcript was left on the clipboard; "
@@ -124,15 +181,18 @@ class DictationController:
     def _watchdog(self) -> None:
         while not self.stop_event.wait(0.1):
             with self.lock:
-                if self.session.tick(time.monotonic()) is Action.CANCEL_CAPTURE:
-                    self.recorder.cancel()
-                    self.status.set("error")
-                    print("Hotkey listener became unhealthy; microphone closed.", file=sys.stderr)
+                action = self.session.tick(time.monotonic())
+            if action is Action.CANCEL_CAPTURE:
+                self.actions.put("force_cancel")
+                self.status.set("error")
+                print("Hotkey listener became unhealthy; microphone closed.", file=sys.stderr)
 
     def close(self) -> None:
         self.stop_event.set()
-        self.cancel()
+        self.actions.put("force_cancel")
+        self.actions.put("close")
         self.watchdog.join(timeout=0.5)
+        self.action_worker.join(timeout=1)
         self.executor.shutdown(wait=False, cancel_futures=True)
 
 
@@ -147,6 +207,15 @@ def main() -> int:
         hotkey = parse_hotkey(settings.hotkey)
     except (OSError, ValueError, RuntimeError) as exc:
         parser.error(str(exc))
+    try:
+        __import__("parakeet_mlx")
+    except ImportError:
+        print(
+            "Parakeet is not installed. Run WITH_PARAKEET=1 "
+            "./scripts/setup_server.sh.",
+            file=sys.stderr,
+        )
+        return 2
 
     from AppKit import NSApplication, NSApplicationActivationPolicyAccessory
     from ApplicationServices import AXIsProcessTrustedWithOptions, kAXTrustedCheckOptionPrompt
@@ -155,7 +224,11 @@ def main() -> int:
     application.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
     AXIsProcessTrustedWithOptions({kAXTrustedCheckOptionPrompt: True})
     status = StatusItem(application)
-    controller = DictationController(settings, status)
+    try:
+        controller = DictationController(settings, status)
+    except (ImportError, OSError, RuntimeError, ValueError) as exc:
+        print(f"Cannot initialize dictation: {exc}", file=sys.stderr)
+        return 2
     listener = QuartzHotkeyListener(
         hotkey, controller.down, controller.up, controller.cancel, controller.health
     )

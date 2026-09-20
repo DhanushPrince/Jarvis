@@ -27,9 +27,9 @@ again. The menu-bar `J` changes to `J ●` while recording, `J …` while
 transcribing, and `J !` on an error.
 
 Hold Right Command, speak, then release. Press Escape while recording to cancel.
-If insertion cannot be confirmed, Jarvis leaves the transcript on the clipboard
-and prints a prompt to press Cmd+V. The microphone is closed if hotkey health is
-lost for 1.5 seconds.
+If Accessibility is unavailable or Cmd+V dispatch fails, Jarvis leaves the
+transcript on the clipboard and prints a prompt to press Cmd+V. The microphone
+is closed if hotkey health is lost for 1.5 seconds.
 
 The first Parakeet run downloads model weights. After that, use
 `HF_HUB_OFFLINE=1 ./scripts/run_dictation.sh` to enforce cached/offline loading.
