@@ -1,0 +1,10 @@
+bots_dir: ../server
+scenarios_dir: scenarios
+runs_dir: runs
+concurrency: 1
+record: false
+spawn: "{python} {bot} -t eval --port {port}"
+
+suite:
+  - bot: bot_eval.py
+    scenarios: [capital_question]

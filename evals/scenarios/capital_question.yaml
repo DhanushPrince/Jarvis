@@ -1,0 +1,10 @@
+name: capital_question
+
+scenarios:
+  - name: capital_question
+    turns:
+      - user: "What is the capital of Germany?"
+        expect:
+          - event: response
+            text_contains: Berlin
+            within_ms: 10000
